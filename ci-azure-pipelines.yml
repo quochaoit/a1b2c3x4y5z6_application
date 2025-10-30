@@ -1,3 +1,17 @@
+parameters:
+- name: environment
+  displayName: Environment to build
+  type: string
+  default: Dev
+  values: [dev, stg, prod]
+
+variables:
+- group: ${{ format('var-group-{0}', parameters.environment) }} # dynamic variable group name
+- name: buildContextPath
+  value: 'docker-demo/src'
+- name: tag
+  value: '$(Build.BuildId)'
+
 trigger: none
   # branches:
   #   include:
@@ -11,11 +25,6 @@ pool:
 #   buildContextPath: 'docker-demo/src'
 #   tag: '$(Build.BuildId)'
 
-variables:
-  acrName: 'devopacr'
-  azureSubscriptionServiceConnection: HaoSubscriptionConn
-  buildContextPath: 'docker-demo/src'
-  tag: '$(Build.BuildId)'
 
 stages:
 - stage: CIStage
@@ -62,12 +71,12 @@ stages:
     - task: AzureCLI@2
       displayName: Login to Azure and ACR
       inputs:
-        azureSubscription: '$(azureSubscriptionServiceConnection)'
+        azureSubscription: '$(AZURE_SUBSCRIPTOIN_SERVICE_CONNECTION)'
         scriptType: 'bash'
         scriptLocation: 'inlineScript'
         inlineScript: |
           echo "Logging into ACR..."
-          az acr login --name $(acrName)
+          az acr login --name $(ACR_NAME)
 
     - task: Bash@3
       displayName: Build and push Docker image for backend
@@ -76,12 +85,12 @@ stages:
         script: |
           echo "Building backend Docker image..."
           cd $(buildContextPath)
-          docker build ./backend -t $(acrName).azurecr.io/backend:$(tag)
-          docker tag $(acrName).azurecr.io/backend:$(tag) $(acrName).azurecr.io/backend:latest
+          docker build ./backend -t $(ACR_NAME).azurecr.io/backend:$(tag)
+          docker tag $(ACR_NAME).azurecr.io/backend:$(tag) $(ACR_NAME).azurecr.io/backend:latest
 
           echo "Pushing backend Docker image to ACR..."
-          docker push $(acrName).azurecr.io/backend:$(Build.BuildId)
-          docker push $(acrName).azurecr.io/backend:latest
+          docker push $(ACR_NAME).azurecr.io/backend:$(Build.BuildId)
+          docker push $(ACR_NAME).azurecr.io/backend:latest
 
     - task: Bash@3
       displayName: Build and push Docker image for frontend
@@ -90,9 +99,9 @@ stages:
         script: |
           echo "Building frontend Docker image..."
           cd $(buildContextPath)
-          docker build ./frontend -t $(acrName).azurecr.io/frontend:$(tag)
-          docker tag $(acrName).azurecr.io/frontend:$(tag) $(acrName).azurecr.io/frontend:latest
+          docker build ./frontend -t $(ACR_NAME).azurecr.io/frontend:$(tag)
+          docker tag $(ACR_NAME).azurecr.io/frontend:$(tag) $(ACR_NAME).azurecr.io/frontend:latest
 
           echo "Pushing frontend Docker image to ACR..."
-          docker push $(acrName).azurecr.io/frontend:$(Build.BuildId)
-          docker push $(acrName).azurecr.io/frontend:latest
+          docker push $(ACR_NAME).azurecr.io/frontend:$(Build.BuildId)
+          docker push $(ACR_NAME).azurecr.io/frontend:latest
