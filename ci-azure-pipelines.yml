@@ -2,7 +2,7 @@ parameters:
 - name: environment
   displayName: Environment to build
   type: string
-  default: Dev
+  default: dev
   values: [dev, stg, prod]
 
 variables:
